@@ -3,7 +3,8 @@ import time
 import datetime
 import pytz
 import logging
-from flask import Flask, request, jsonify, send_from_directory, render_template
+import socket
+from flask import Flask, request, jsonify, send_from_directory, render_template, send_file, abort
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
@@ -21,17 +22,32 @@ from utils import (
 # Load environment variables
 load_dotenv()
 
+# Render environment configuration
+DATABASE_URL = os.environ.get('DATABASE_URL', 'sqlite:///memoryassist.db')
+if DATABASE_URL.startswith('postgres://'):
+    DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
+
 # Configure logging
 logger = configure_logging()
+
+# Enhanced logging configuration
+logging.basicConfig(level=logging.DEBUG, 
+                    format='%(asctime)s - %(levelname)s - %(message)s',
+                    filename='app_debug.log')
 
 # Initialize app and configurations
 app = Flask(__name__)
 CORS(app)
 
-# Database configuration
-app.config['SQLALCHEMY_DATABASE_URI'] = r'sqlite:///C:/Users/fmave/MemoryAssist/backend/instance/memory_assist.db'
+# Update app configuration
+app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(__file__), 'uploads')
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', os.urandom(24))
+
+# Update upload folder configuration
+app.config['UPLOAD_FOLDER'] = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
+logger.debug(f'Upload folder configured to: {app.config["UPLOAD_FOLDER"]}')
+
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # Initialize database
@@ -82,11 +98,11 @@ class Task(db.Model):
     repeat_days_str = db.Column('repeat_days', db.String(100), nullable=True)  # Keep for backwards compatibility
     repeat_until = db.Column(db.DateTime, nullable=True)
     is_completed = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=datetime.datetime.now(IST))
+    created_at = db.Column(db.DateTime, default=lambda: datetime.datetime.now(pytz.timezone('Asia/Kolkata')))
     version = db.Column(db.Integer, default=1)
 
     def to_dict(self):
-        return {
+        return {    
             'id': self.id,
             'name': self.name,
             'description': self.description,
@@ -116,23 +132,49 @@ class MemoryLog(db.Model):
 # Initialize memory chatbot
 memory_chatbot = MemoryChatbot(MemoryLog)
 
-# Request logging
+# Log request information
 @app.before_request
 def log_request_info():
-    logger.info(f'Request from: {request.remote_addr}')
-    logger.info(f'Requested URL: {request.url}')
-    logger.info(f'Request Method: {request.method}')
-    logger.info(f'Request Headers: {request.headers}')
+    # Get hostname and IP
+    hostname = socket.gethostname()
+    local_ip = socket.gethostbyname(hostname)
+    
+    # Log detailed request information
+    logging.debug(f"Hostname: {hostname}")
+    logging.debug(f"Local IP: {local_ip}")
+    logging.debug(f"Request IP: {request.remote_addr}")
+    logging.debug(f"Request Host: {request.host}")
+    logging.debug(f"Request URL: {request.url}")
+    logging.debug(f"Request Method: {request.method}")
+    logging.debug(f"Request Headers: {dict(request.headers)}")
+
+# Debug route to help diagnose network issues
+@app.route('/debug-info')
+def debug_info():
+    return jsonify({
+        'hostname': socket.gethostname(),
+        'local_ip': socket.gethostbyname(socket.gethostname()),
+        'request_ip': request.remote_addr,
+        'request_host': request.host,
+        'request_url': request.url
+    })
 
 # Routes for People with Enhanced Error Handling
 @app.route('/api/people', methods=['POST'])
 def add_person():
     try:
+        logger.debug('Starting person addition process')
+        logger.debug(f'Request method: {request.method}')
+        logger.debug(f'Request content type: {request.content_type}')
+        logger.debug(f'Request form data: {dict(request.form)}')
+        logger.debug(f'Request files: {list(request.files.keys())}')
+        
         if 'photo' not in request.files:
             logger.warning('No photo provided in person addition request')
             return jsonify({'error': 'No photo provided'}), 400
         
         photo = request.files['photo']
+        logger.debug(f'Photo filename: {photo.filename}')
         
         # Validate image
         is_valid, error_msg = validate_image(photo)
@@ -144,48 +186,78 @@ def add_person():
         relation = request.form.get('relation', '').strip() or 'Unknown'
         description = request.form.get('description', '').strip()
         
+        logger.debug(f'Extracted form data - Name: {name}, Relation: {relation}, Description: {description}')
+        
         if not name:
             logger.warning('Name is required for person addition')
             return jsonify({'error': 'Name is required'}), 400
         
         filename = secure_filename(f"{name}_{int(time.time())}_{photo.filename}")
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        photo.save(filepath)
+        
+        # Ensure the upload directory exists and is writable
+        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+        
+        # Check directory permissions
+        if not os.access(app.config['UPLOAD_FOLDER'], os.W_OK):
+            logger.error(f'Upload directory is not writable: {app.config["UPLOAD_FOLDER"]}')
+            return jsonify({'error': 'Server configuration error: Upload directory not writable'}), 500
+        
+        logger.debug(f'Attempting to save uploaded file: {filename}')
+        logger.debug(f'Upload folder: {app.config["UPLOAD_FOLDER"]}')
+        logger.debug(f'Full file path: {filepath}')
+        
+        try:
+            photo.save(filepath)
+            logger.debug(f'Successfully saved photo to: {filepath}')
+        except PermissionError:
+            logger.error(f'Permission denied when saving file: {filepath}')
+            return jsonify({'error': 'Server permission error: Cannot save uploaded file'}), 500
+        except Exception as save_error:
+            logger.error(f'Unexpected error saving file: {save_error}')
+            return jsonify({'error': f'File upload failed: {str(save_error)}'}), 500
         
         try:
             # Add person to database and perform face recognition
+            logger.debug('Attempting face recognition')
             face_result = face_recognition_handler.add_person(
                 filepath, name, relation, description
             )
             
             if 'error' in face_result:
-                os.remove(filepath)
-                logger.error(f'Face recognition error: {face_result["error"]}')
-                return jsonify(face_result), 400
+                if os.path.exists(filepath):
+                    os.remove(filepath)
+                    logger.error(f'Face recognition error: {face_result["error"]}')
+                    return jsonify(face_result), 400
             
+            logger.debug('Creating new Person object')
             new_person = Person(
                 name=name, 
                 relation=relation, 
                 description=description, 
                 image_path=filename
             )
-            db.session.add(new_person)
-            db.session.commit()
             
-            logger.info(f'Person added: {name}')
-            return jsonify({
-                'message': 'Person added successfully', 
-                'person': new_person.to_dict()
-            }), 201
+            db.session.add(new_person)
+            
+            try:
+                db.session.commit()
+                logger.info(f'Successfully added person: {name}')
+                return jsonify(new_person.to_dict()), 201
+            except Exception as commit_error:
+                db.session.rollback()
+                logger.error(f'Database commit error: {commit_error}')
+                return jsonify({'error': 'Failed to save person to database'}), 500
         
-        except Exception as db_error:
-            os.remove(filepath)
-            logger.error(f'Database insertion error: {db_error}')
-            return jsonify({'error': str(db_error)}), 500
+        except Exception as face_error:
+            logger.error(f'Face recognition or database error: {face_error}')
+            if os.path.exists(filepath):
+                os.remove(filepath)
+            return jsonify({'error': str(face_error)}), 500
     
     except Exception as e:
-        logger.critical(f'Unexpected error in person addition: {e}')
-        return jsonify({'error': f'Unexpected error: {str(e)}'}), 500
+        logger.error(f'Unexpected error in add_person: {e}')
+        return jsonify({'error': 'Unexpected server error'}), 500
 
 @app.route('/api/people', methods=['GET'])
 def get_people():
@@ -194,6 +266,49 @@ def get_people():
         return jsonify([person.to_dict() for person in people]), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@app.route('/api/people/<int:person_id>', methods=['GET'])
+def get_person_details(person_id):
+    try:
+        person = Person.query.get(person_id)
+        
+        if not person:
+            return jsonify({'error': 'Person not found'}), 404
+        
+        return jsonify(person.to_dict()), 200
+    except Exception as e:
+        logger.error(f'Error fetching person details: {e}')
+        return jsonify({'error': 'Error fetching person details'}), 500
+
+@app.route('/api/people/<int:person_id>', methods=['DELETE'])
+def delete_person(person_id):
+    try:
+        person = Person.query.get(person_id)
+        
+        if not person:
+            return jsonify({'error': 'Person not found'}), 404
+        
+        # Remove the associated image file
+        if person.image_path:
+            image_path = os.path.join(app.config['UPLOAD_FOLDER'], person.image_path)
+            if os.path.exists(image_path):
+                os.remove(image_path)
+        
+        # Remove from known faces if applicable
+        known_faces_dir = 'known_faces'
+        face_encoding_path = os.path.join(known_faces_dir, f'{person.name}.npy')
+        if os.path.exists(face_encoding_path):
+            os.remove(face_encoding_path)
+        
+        # Delete from database
+        db.session.delete(person)
+        db.session.commit()
+        
+        return jsonify({'message': 'Person deleted successfully'}), 200
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f'Error deleting person: {e}')
+        return jsonify({'error': 'Error deleting person'}), 500
 
 # Face Recognition Route
 @app.route('/api/identify', methods=['POST'])
@@ -400,6 +515,80 @@ def memory_chat():
         logger.critical(f'Unexpected error in memory chat: {e}')
         return jsonify({'error': str(e)}), 500
 
+# Person Identification Route
+@app.route('/api/identify-person', methods=['POST'])
+def identify_person_api():
+    try:
+        logger.debug('Starting person identification process')
+        
+        if 'identify-photo' not in request.files:
+            logger.warning('No photo provided for identification')
+            return jsonify({'error': 'No photo provided'}), 400
+        
+        photo = request.files['identify-photo']
+        
+        # Validate image
+        is_valid, error_msg = validate_image(photo)
+        if not is_valid:
+            logger.warning(f'Invalid image upload: {error_msg}')
+            return jsonify({'error': error_msg}), 400
+        
+        # Save the uploaded image temporarily
+        filename = secure_filename(f"identify_{int(time.time())}_{photo.filename}")
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        
+        # Ensure the upload directory exists and is writable
+        os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+        
+        # Check directory permissions
+        if not os.access(app.config['UPLOAD_FOLDER'], os.W_OK):
+            logger.error(f'Upload directory is not writable: {app.config["UPLOAD_FOLDER"]}')
+            return jsonify({'error': 'Server configuration error: Upload directory not writable'}), 500
+        
+        logger.debug(f'Attempting to save uploaded file: {filename}')
+        logger.debug(f'Upload folder: {app.config["UPLOAD_FOLDER"]}')
+        logger.debug(f'Full file path: {filepath}')
+        
+        try:
+            photo.save(filepath)
+            logger.debug(f'Successfully saved photo to: {filepath}')
+        except PermissionError:
+            logger.error(f'Permission denied when saving file: {filepath}')
+            return jsonify({'error': 'Server permission error: Cannot save uploaded file'}), 500
+        except Exception as save_error:
+            logger.error(f'Unexpected error saving file: {save_error}')
+            return jsonify({'error': f'File upload failed: {str(save_error)}'}), 500
+        
+        try:
+            # Attempt to identify the person
+            identification_result = face_recognition_handler.identify_person(filepath)
+            
+            # Remove the temporary file
+            if os.path.exists(filepath):
+                os.remove(filepath)
+            
+            # Check identification result
+            if 'error' in identification_result:
+                return jsonify({'error': identification_result['error']}), 404
+            
+            return jsonify({
+                'name': identification_result['name'],
+                'confidence': identification_result.get('match_confidence')
+            }), 200
+        
+        except Exception as e:
+            logger.error(f'Error in person identification: {e}')
+            
+            # Remove the temporary file if it exists
+            if os.path.exists(filepath):
+                os.remove(filepath)
+            
+            return jsonify({'error': 'Unable to identify person'}), 500
+    
+    except Exception as e:
+        logger.error(f'Unexpected error in person identification: {e}')
+        return jsonify({'error': 'Unexpected server error'}), 500
+
 # Template Rendering Routes
 @app.route('/')
 def index():
@@ -425,9 +614,44 @@ def memories():
 def chat():
     return render_template('chat.html')
 
-@app.route('/uploads/<filename>')
+@app.route('/reminders')
+def reminders():
+    return render_template('reminders.html')
+
+@app.route('/people-view')
+def people_view():
+    return render_template('people_view.html')
+
+@app.route('/uploads/<path:filename>')
 def uploaded_file(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+    """
+    Serve uploaded files safely
+    
+    :param filename: Name of the file to serve
+    :return: File or 404 error
+    """
+    try:
+        # Ensure the file is within the uploads directory
+        upload_dir = os.path.abspath(app.config['UPLOAD_FOLDER'])
+        file_path = os.path.abspath(os.path.join(upload_dir, filename))
+        
+        # Security check: ensure the file is within the upload directory
+        if not file_path.startswith(upload_dir):
+            logger.warning(f'Attempted to access file outside upload directory: {filename}')
+            abort(403)  # Forbidden
+        
+        # Check if file exists
+        if not os.path.exists(file_path):
+            logger.warning(f'Requested file not found: {filename}')
+            abort(404)
+        
+        return send_file(file_path)
+    except Exception as e:
+        logger.error(f'Error serving uploaded file: {e}')
+        return jsonify({'error': 'Error serving file'}), 500
+
+# Port Configuration
+port = int(os.environ.get('PORT', 5000))
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=port)

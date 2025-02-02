@@ -11,7 +11,7 @@ MemoryAssist is an application designed to help elderly users and individuals wi
 - Person Management
   - Add people with photos
   - Store names, relationships, and descriptions
-  - Face recognition (placeholder)
+  - Face recognition using advanced computer vision
 
 - Task and Reminder Management
   - Create tasks with reminder times
@@ -24,32 +24,16 @@ MemoryAssist is an application designed to help elderly users and individuals wi
   - Timestamp each memory
 
 - Memory Chatbot
-  - Conversational AI for memory recall (placeholder)
+  - AI-powered conversational interface for memory recall
 
-## Setup
+## Prerequisites
+- Python 3.9+
+- pip
+- Virtual environment support
+
+## Local Development Setup
 
 ### Backend Setup
-1. Navigate to the `backend` directory
-2. Create a virtual environment
-   ```
-   python -m venv venv
-   venv\Scripts\activate
-   ```
-3. Install dependencies
-   ```
-   pip install -r requirements.txt
-   ```
-4. Run the application
-   ```
-   python app.py
-   ```
-
-### Frontend Setup (Coming Soon)
-Frontend will be developed using modern web technologies.
-
-## Git Repository Management
-
-### Initial Setup
 1. Clone the repository
    ```bash
    git clone https://github.com/yourusername/MemoryAssist.git
@@ -59,8 +43,7 @@ Frontend will be developed using modern web technologies.
 2. Create a virtual environment
    ```bash
    python -m venv venv
-   venv\Scripts\activate  # On Windows
-   source venv/bin/activate  # On macOS/Linux
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
 3. Install dependencies
@@ -68,46 +51,46 @@ Frontend will be developed using modern web technologies.
    pip install -r requirements.txt
    ```
 
-### Git Workflow
-- Create a new branch for features
-  ```bash
-  git checkout -b feature/your-feature-name
-  ```
-- Commit changes
-  ```bash
-  git add .
-  git commit -m "Description of changes"
-  ```
-- Push to remote repository
-  ```bash
-  git push origin feature/your-feature-name
-  ```
+4. Configure environment
+   - Copy `.env.example` to `.env`
+   - Update configuration as needed
 
-### Deployment
-- Set environment variables in `.env` file
-- Use Flask-Migrate for database migrations
-  ```bash
-  flask db upgrade
-  ```
-- Run the application
-  ```bash
-  python app.py
-  ```
+5. Initialize the database
+   ```bash
+   flask db upgrade
+   ```
 
-### Recommended Workflow
-1. Always pull latest changes before starting work
-2. Create a new branch for each feature
-3. Write tests for new features
-4. Submit pull requests for code review
+6. Run the application
+   ```bash
+   flask run
+   ```
 
-## Technologies
-- Backend: Flask, SQLAlchemy
-- Database: SQLite
-- Face Recognition: face_recognition library (placeholder)
-- Chatbot: OpenAI API (future implementation)
+## Configuration
+
+### Environment Variables
+- `SECRET_KEY`: Flask secret key
+- `DATABASE_URL`: Database connection string
+- `UPLOAD_FOLDER`: Directory for file uploads
+- `LOG_LEVEL`: Logging verbosity
+
+### Database
+Supports SQLite (default) and PostgreSQL
+
+## Security Considerations
+- Use strong, unique `SECRET_KEY`
+- Set appropriate file upload size limits
+- Use HTTPS in production
+- Regularly update dependencies
 
 ## Contributing
-Contributions are welcome! Please submit pull requests or open issues.
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
 
 ## License
 [Specify your license]
+
+## Support
+For issues or questions, please open a GitHub issue.

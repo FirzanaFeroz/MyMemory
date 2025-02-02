@@ -12,8 +12,12 @@ class FaceRecognitionHandler:
         
         :param known_people_dir: Directory to store known face encodings
         """
-        self.known_people_dir = known_people_dir
-        os.makedirs(known_people_dir, exist_ok=True)
+        # Use absolute path to ensure consistency
+        self.known_people_dir = os.path.abspath(os.path.join(
+            os.path.dirname(__file__), 
+            known_people_dir
+        ))
+        os.makedirs(self.known_people_dir, exist_ok=True)
         
         # Dictionary to store known face encodings
         self.known_faces = {}

@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <h2>Your Reminders</h2>
+            
+            <div class="filter-section mb-3">
+                <div class="btn-group" role="group" aria-label="Reminder Filters">
+                    <button id="filter-all" class="btn btn-outline-primary active">All</button>
+                    <button id="filter-active" class="btn btn-outline-primary">Active</button>
+                    <button id="filter-completed" class="btn btn-outline-primary">Completed</button>
+                </div>
+            </div>
+            
+            <div id="reminders-container" class="row">
+                <!-- Reminders will be dynamically loaded here -->
+            </div>
+            
+            <div id="no-reminders" class="text-center d-none">
+                <p class="text-muted">No reminders found.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const reminderContainer = document.getElementById('reminders-container');
+    const noRemindersMessage = document.getElementById('no-reminders');
+    const filterButtons = {
+        all: document.getElementById('filter-all'),
+        active: document.getElementById('filter-active'),
+        completed: document.getElementById('filter-completed')
+    };
+
+    // Fetch and display reminders
+    async function loadReminders() {
+        try {
+            const response = await fetch('/api/tasks');
+            const tasks = await response.json();
+
+            // Clear previous reminders
+            reminderContainer.innerHTML = '';
+
+            if (tasks.length === 0) {
+                noRemindersMessage.classList.remove('d-none');
+                return;
+            }
+
+            noRemindersMessage.classList.add('d-none');
+
+            tasks.forEach(task => {
+                const taskCard = document.createElement('div');
+                taskCard.className = `col-md-4 mb-3 task-card ${task.is_completed ? 'task-completed' : ''}`;
+                taskCard.innerHTML = `
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">${task.name}</h5>
+                            <p class="card-text">${task.description || 'No description'}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">
+                                    ${task.reminder_time ? `Reminder: ${new Date(task.reminder_time).toLocaleString()}` : 'No specific time'}
+                                </small>
+                                <div class="form-check">
+                                    <input type="checkbox" 
+                                           class="form-check-input task-complete-checkbox" 
+                                           data-task-id="${task.id}"
+                                           ${task.is_completed ? 'checked' : ''}>
+                                    <label class="form-check-label">Complete</label>
+                                </div>
+                            </div>
+                            ${task.repeat_type !== 'none' ? `
+                            <div class="mt-2">
+                                <small class="badge bg-info">Repeats ${task.repeat_type}</small>
+                                ${task.repeat_days ? `<small class="badge bg-light text-dark ms-1">${task.repeat_days}</small>` : ''}
+                            </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+                reminderContainer.appendChild(taskCard);
+            });
+
+            // Add event listeners for task completion
+            document.querySelectorAll('.task-complete-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', async (e) => {
+                    const taskId = e.target.dataset.taskId;
+                    try {
+                        const response = await fetch(`/api/tasks/${taskId}`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ is_completed: e.target.checked })
+                        });
+                        
+                        if (!response.ok) {
+                            throw new Error('Failed to update task');
+                        }
+                        
+                        // Update visual state
+                        e.target.closest('.task-card').classList.toggle('task-completed');
+                        showAlert('Task updated successfully', 'success');
+                    } catch (error) {
+                        showAlert('Error updating task', 'danger');
+                        console.error('Error:', error);
+                        e.target.checked = !e.target.checked;
+                    }
+                });
+            });
+
+            // Filter functionality
+            Object.values(filterButtons).forEach(button => {
+                button.addEventListener('click', () => {
+                    // Remove active class from all buttons
+                    Object.values(filterButtons).forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+
+                    const taskCards = document.querySelectorAll('.task-card');
+                    taskCards.forEach(card => {
+                        switch(button.id) {
+                            case 'filter-active':
+                                card.style.display = card.classList.contains('task-completed') ? 'none' : 'block';
+                                break;
+                            case 'filter-completed':
+                                card.style.display = card.classList.contains('task-completed') ? 'block' : 'none';
+                                break;
+                            default:
+                                card.style.display = 'block';
+                        }
+                    });
+                });
+            });
+        } catch (error) {
+            console.error('Error loading tasks:', error);
+            showAlert('Error loading reminders', 'danger');
+        }
+    }
+
+    // Initial load
+    loadReminders();
+});
+</script>
+{% endblock %}

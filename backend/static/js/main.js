@@ -188,36 +188,7 @@ async function sendChatMessage() {
 
 // Camera and Photo Capture
 function setupCamera() {
-    const videoElement = document.getElementById('camera-preview');
-    const captureButton = document.getElementById('capture-photo');
-    const photoPreview = document.getElementById('photo-preview');
-    
-    if (!videoElement || !captureButton || !photoPreview) return;
-    
-    navigator.mediaDevices.getUserMedia({ video: true })
-        .then(stream => {
-            videoElement.srcObject = stream;
-            
-            captureButton.addEventListener('click', () => {
-                const canvas = document.createElement('canvas');
-                canvas.width = videoElement.videoWidth;
-                canvas.height = videoElement.videoHeight;
-                canvas.getContext('2d').drawImage(videoElement, 0, 0);
-                
-                const dataUrl = canvas.toDataURL('image/jpeg');
-                photoPreview.src = dataUrl;
-                
-                // Convert data URL to blob for upload
-                canvas.toBlob(blob => {
-                    const file = new File([blob], 'captured-photo.jpg', { type: 'image/jpeg' });
-                    // You can now use this file for upload
-                });
-            });
-        })
-        .catch(error => {
-            showAlert('Error accessing camera', 'danger');
-            console.error('Camera error:', error);
-        });
+    // Removed camera setup function
 }
 
 // Form Submission Handlers
@@ -228,32 +199,18 @@ function setupFormHandlers() {
         personForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            // Check if a photo is selected or captured
-            const photoInput = document.getElementById('photo');
-            const photoPreview = document.getElementById('photo-preview');
-            
             const formData = new FormData(personForm);
-            
-            // If photo preview is visible, convert it to a file
-            if (photoPreview.style.display !== 'none' && photoPreview.src) {
-                try {
-                    const response = await fetch(photoPreview.src);
-                    const blob = await response.blob();
-                    formData.set('photo', blob, 'captured_photo.jpg');
-                } catch (error) {
-                    showAlert('Error processing captured photo', 'danger');
-                    return;
-                }
-            }
             
             // Validate form data
             const name = formData.get('name').trim();
+            const photo = formData.get('photo');
+            
             if (!name) {
                 showAlert('Name is required', 'danger');
                 return;
             }
             
-            if (!formData.get('photo') || formData.get('photo').size === 0) {
+            if (!photo || photo.size === 0) {
                 showAlert('Photo is required', 'danger');
                 return;
             }
@@ -269,7 +226,6 @@ function setupFormHandlers() {
                 if (response.ok) {
                     showAlert('Person added successfully', 'success');
                     personForm.reset();
-                    photoPreview.style.display = 'none';
                     loadPeople();
                 } else {
                     showAlert(result.error || 'Error adding person', 'danger');
@@ -461,10 +417,6 @@ function initializePage() {
     
     if (document.getElementById('memories-list')) {
         loadMemories();
-    }
-    
-    if (document.getElementById('camera-preview')) {
-        setupCamera();
     }
     
     setupFormHandlers();

@@ -1,0 +1,19 @@
+Flask==2.3.2
+Flask-SQLAlchemy==3.0.3
+Flask-Cors==4.0.0
+Werkzeug==2.3.4
+python-dotenv==1.0.0
+pytz==2023.3
+gunicorn==20.1.0
+SQLAlchemy==2.0.12
+psycopg2-binary==2.9.6
+python-dateutil==2.8.2
+
+# Optional dependencies for enhanced functionality
+numpy==1.24.3
+opencv-python-headless==4.7.0.72
+scikit-learn==1.2.2
+
+# Render-specific optimizations
+wheel==0.40.0
+setuptools==67.6.1

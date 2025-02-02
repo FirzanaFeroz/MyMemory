@@ -1,27 +1,28 @@
-# Python
+# Virtual Environment
+venv/
+*.venv
+.env
+
+# Python bytecode
 __pycache__/
 *.py[cod]
 *$py.class
-
-# Virtual Environment
-venv/
-env/
-.env
 
 # Database
 *.db
 *.sqlite3
 
-# Logs
-*.log
+# Uploads and logs
+backend/uploads/
+logs/
+backend/known_faces/
 
-# IDE specific
+# IDE and Editor files
 .vscode/
 .idea/
+*.swp
+*.swo
 
 # OS generated files
 .DS_Store
 Thumbs.db
-
-# Flask migration files
-migrations/

@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">People in My Memory</h2>
+    
+    <div id="people-grid" class="row g-4">
+        <!-- People will be dynamically loaded here -->
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+    const peopleGrid = document.getElementById('people-grid');
+
+    try {
+        const response = await fetch('/api/people');
+        const people = await response.json();
+
+        if (people.length === 0) {
+            peopleGrid.innerHTML = `
+                <div class="col-12 text-center">
+                    <p class="alert alert-info">No people have been added yet.</p>
+                    <a href="/people" class="btn btn-primary">Add a Person</a>
+                </div>
+            `;
+            return;
+        }
+
+        people.forEach(person => {
+            const personCard = document.createElement('div');
+            personCard.classList.add('col-md-4', 'col-lg-3', 'col-sm-6');
+            
+            const imageUrl = person.image_path ? 
+                `/uploads/${person.image_path.split('/').pop()}` : 
+                '/static/images/default-person.png';
+
+            personCard.innerHTML = `
+                <div class="card h-100 person-card">
+                    <div class="card-image-container">
+                        <img src="${imageUrl}" 
+                             alt="${person.name}" 
+                             class="card-img-top person-image" 
+                             onerror="this.src='/static/images/default-person.png'">
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title">${person.name}</h5>
+                        <p class="card-text text-muted">
+                            ${person.relation || 'No relation specified'}
+                        </p>
+                        <p class="card-text">
+                            ${person.description || 'No description available'}
+                        </p>
+                    </div>
+                    <div class="card-footer">
+                        <div class="btn-group w-100" role="group">
+                            <button class="btn btn-sm btn-outline-primary edit-person" data-id="${person.id}">
+                                <i class="fas fa-edit"></i> Edit
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger delete-person" data-id="${person.id}">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            peopleGrid.appendChild(personCard);
+        });
+
+        // Add event listeners for edit and delete buttons
+        peopleGrid.addEventListener('click', async (e) => {
+            const editBtn = e.target.closest('.edit-person');
+            const deleteBtn = e.target.closest('.delete-person');
+
+            if (editBtn) {
+                const personId = editBtn.dataset.id;
+                window.location.href = `/people?edit=${personId}`;
+            }
+
+            if (deleteBtn) {
+                const personId = deleteBtn.dataset.id;
+                const confirmDelete = confirm('Are you sure you want to delete this person?');
+                
+                if (confirmDelete) {
+                    try {
+                        const response = await fetch(`/api/people/${personId}`, { method: 'DELETE' });
+                        const result = await response.json();
+
+                        if (response.ok) {
+                            showAlert('Person deleted successfully', 'success');
+                            deleteBtn.closest('.col-md-4').remove();
+                        } else {
+                            showAlert(result.error || 'Error deleting person', 'danger');
+                        }
+                    } catch (error) {
+                        showAlert('Network error', 'danger');
+                    }
+                }
+            }
+        });
+
+    } catch (error) {
+        console.error('Error fetching people:', error);
+        peopleGrid.innerHTML = `
+            <div class="col-12 text-center">
+                <p class="alert alert-danger">Unable to load people. Please try again later.</p>
+            </div>
+        `;
+    }
+});
+</script>
+
+<style>
+.person-card {
+    transition: transform 0.3s ease;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.person-card:hover {
+    transform: scale(1.05);
+}
+
+.card-image-container {
+    height: 250px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.person-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+</style>
+{% endblock %}

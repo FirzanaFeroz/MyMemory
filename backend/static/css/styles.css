@@ -49,7 +49,7 @@ body {
 /* Memory Log Styles */
 .memory-log-entry {
     background-color: white;
-    border-left: 4px solid #007bff;
+    border-left: 4px solid lightyellow;
     padding: 15px;
     margin-bottom: 15px;
 }
