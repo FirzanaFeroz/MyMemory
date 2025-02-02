@@ -22,10 +22,16 @@ from utils import (
 # Load environment variables
 load_dotenv()
 
-# Render environment configuration
-DATABASE_URL = os.environ.get('DATABASE_URL', 'sqlite:///memoryassist.db')
-if DATABASE_URL.startswith('postgres://'):
-    DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
+# Determine database path for Render's ephemeral storage
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATABASE_DIR = '/tmp/instance'  # Render's writable directory
+
+# Create the database directory if it doesn't exist
+os.makedirs(DATABASE_DIR, exist_ok=True)
+
+# Configure SQLite database path
+DATABASE_PATH = os.path.join(DATABASE_DIR, 'memory_assist.db')
+DATABASE_URL = f'sqlite:///{DATABASE_PATH}'
 
 # Configure logging
 logger = configure_logging()
@@ -56,11 +62,25 @@ db = SQLAlchemy(app)
 # Initialize database migration
 migrate = Migrate(app, db)
 
+# Ensure database directory exists before initializing
+db.init_app(app)
+with app.app_context():
+    try:
+        # Create database directory if not exists
+        os.makedirs(os.path.dirname(DATABASE_PATH), exist_ok=True)
+        # Create tables if not exists
+        db.create_all()
+    except Exception as e:
+        print(f"Error initializing database: {e}")
+
 # Timezone setup
 IST = pytz.timezone('Asia/Kolkata')
 
 # Initialize face recognition
 face_recognition_handler = FaceRecognitionHandler()
+
+# Initialize memory chatbot
+memory_chatbot = MemoryChatbot(MemoryLog)
 
 # Models (same as before, but with added logging)
 class Person(db.Model):
@@ -128,9 +148,6 @@ class MemoryLog(db.Model):
             'content': self.content,
             'timestamp': self.timestamp.isoformat()
         }
-
-# Initialize memory chatbot
-memory_chatbot = MemoryChatbot(MemoryLog)
 
 # Log request information
 @app.before_request
