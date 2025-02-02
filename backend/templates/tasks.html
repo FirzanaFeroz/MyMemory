@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-6">
+        <h2>Add a Task</h2>
+        <form id="task-form">
+            <div class="form-group">
+                <label for="task-name" class="form-label">Task Name <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="task-name" name="name" required maxlength="200" 
+                       placeholder="Enter a descriptive task name">
+                <small class="form-text text-muted">Maximum 200 characters</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="task-description" class="form-label">Description</label>
+                <textarea class="form-control" id="task-description" name="description" maxlength="1000" 
+                          placeholder="Optional: Add more details about the task"></textarea>
+                <small class="form-text text-muted">Optional description (max 1000 characters)</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="task-reminder" class="form-label">Reminder Time</label>
+                <input type="time" class="form-control" id="task-reminder" name="reminder_time">
+                <small class="form-text text-muted">Optional: Set a specific time for the task reminder</small>
+            </div>
+            
+            <div class="form-group">
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="task-repeat-enable">
+                    <label class="form-check-label" for="task-repeat-enable">Repeat Reminder</label>
+                </div>
+                <small class="form-text text-muted">Check this to set a recurring task</small>
+            </div>
+            
+            <div id="repeat-options" class="repeat-options d-none">
+                <div class="form-group">
+                    <label class="form-label">Repeat Type <span class="text-danger">*</span></label>
+                    <div>
+                        <div class="form-check">
+                            <input type="radio" class="form-check-input" id="repeat-none" name="repeat_type" value="none" checked>
+                            <label class="form-check-label" for="repeat-none">None</label>
+                        </div>
+                        <div class="form-check">
+                            <input type="radio" class="form-check-input" id="repeat-daily" name="repeat_type" value="daily">
+                            <label class="form-check-label" for="repeat-daily">Daily</label>
+                        </div>
+                        <div class="form-check">
+                            <input type="radio" class="form-check-input" id="repeat-weekly" name="repeat_type" value="weekly">
+                            <label class="form-check-label" for="repeat-weekly">Weekly</label>
+                        </div>
+                        <div class="form-check">
+                            <input type="radio" class="form-check-input" id="repeat-monthly" name="repeat_type" value="monthly">
+                            <label class="form-check-label" for="repeat-monthly">Monthly</label>
+                        </div>
+                    </div>
+                    <small class="form-text text-muted">Choose how often this task should repeat</small>
+                </div>
+
+                <div class="form-group mt-2">
+                    <label for="repeat-time" class="form-label">Repeat Time</label>
+                    <input type="time" class="form-control" id="repeat-time" name="repeat_time">
+                    <small class="form-text text-muted">Time of day for repeated tasks (optional)</small>
+                </div>
+
+                <div class="form-group mt-2">
+                    <label for="repeat-days" class="form-label">Repeat Days</label>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="day-monday" name="repeat_days" value="monday">
+                                <label class="form-check-label" for="day-monday">Monday</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="day-tuesday" name="repeat_days" value="tuesday">
+                                <label class="form-check-label" for="day-tuesday">Tuesday</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="day-wednesday" name="repeat_days" value="wednesday">
+                                <label class="form-check-label" for="day-wednesday">Wednesday</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="day-thursday" name="repeat_days" value="thursday">
+                                <label class="form-check-label" for="day-thursday">Thursday</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="day-friday" name="repeat_days" value="friday">
+                                <label class="form-check-label" for="day-friday">Friday</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="day-saturday" name="repeat_days" value="saturday">
+                                <label class="form-check-label" for="day-saturday">Saturday</label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="day-sunday" name="repeat_days" value="sunday">
+                                <label class="form-check-label" for="day-sunday">Sunday</label>
+                            </div>
+                        </div>
+                    </div>
+                    <small class="form-text text-muted">Select days for weekly repeat (required for weekly tasks)</small>
+                </div>
+
+                <div class="form-group mt-2">
+                    <label for="repeat-until" class="form-label">Repeat Until</label>
+                    <input type="date" class="form-control" id="repeat-until" name="repeat_until">
+                    <small class="form-text text-muted">Optional: End date for recurring tasks (must be in the future)</small>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn btn-primary mt-3">Add Task</button>
+        </form>
+    </div>
+    
+    <div class="col-md-6">
+        <h2>Tasks List</h2>
+        <div id="tasks-list">
+            <!-- Tasks will be dynamically loaded here -->
+        </div>
+    </div>
+</div>
+{% endblock %}

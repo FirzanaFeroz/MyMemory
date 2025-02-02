@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-6">
+        <h2>Add a Person</h2>
+        <form id="person-form" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="name" class="form-label">Name</label>
+                <input type="text" class="form-control" id="name" name="name" required>
+            </div>
+            <div class="form-group">
+                <label for="relation" class="form-label">Relation</label>
+                <input type="text" class="form-control" id="relation" name="relation">
+            </div>
+            <div class="form-group">
+                <label for="description" class="form-label">Description</label>
+                <textarea class="form-control" id="description" name="description"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="photo" class="form-label">Photo</label>
+                <input type="file" class="form-control" id="photo" name="photo" accept="image/*" required>
+            </div>
+            
+            <h3 class="mt-4">Camera Capture</h3>
+            <div class="form-group">
+                <video id="camera-preview" class="form-control" autoplay></video>
+                <button type="button" id="capture-photo" class="btn btn-secondary mt-2">Capture Photo</button>
+                <img id="photo-preview" class="form-control mt-2" style="display:none;">
+            </div>
+            
+            <button type="submit" class="btn btn-primary mt-3">Add Person</button>
+        </form>
+    </div>
+    
+    <div class="col-md-6">
+        <h2>People List</h2>
+        <div class="row" id="people-list">
+            <!-- People will be dynamically loaded here -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const videoElement = document.getElementById('camera-preview');
+        const captureButton = document.getElementById('capture-photo');
+        const photoPreview = document.getElementById('photo-preview');
+        
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => {
+                videoElement.srcObject = stream;
+                
+                captureButton.addEventListener('click', () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = videoElement.videoWidth;
+                    canvas.height = videoElement.videoHeight;
+                    canvas.getContext('2d').drawImage(videoElement, 0, 0);
+                    
+                    photoPreview.src = canvas.toDataURL('image/jpeg');
+                    photoPreview.style.display = 'block';
+                });
+            })
+            .catch(error => {
+                console.error('Camera error:', error);
+            });
+    });
+</script>
+{% endblock %}

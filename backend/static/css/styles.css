@@ -1,0 +1,124 @@
+/* Global Styles */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f4f4f4;
+    color: #333;
+}
+
+/* Dashboard Styles */
+.dashboard-card {
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+    transition: transform 0.3s ease;
+}
+
+.dashboard-card:hover {
+    transform: scale(1.02);
+}
+
+/* People Styles */
+.person-card {
+    text-align: center;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.person-image {
+    max-width: 200px;
+    max-height: 200px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+/* Task Styles */
+.task-list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.task-completed {
+    text-decoration: line-through;
+    color: #888;
+}
+
+/* Memory Log Styles */
+.memory-log-entry {
+    background-color: white;
+    border-left: 4px solid #007bff;
+    padding: 15px;
+    margin-bottom: 15px;
+}
+
+/* Chat Styles */
+.chat-container {
+    max-height: 500px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    padding: 15px;
+    margin-bottom: 15px;
+}
+
+.chat-message {
+    margin-bottom: 10px;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+.user-message {
+    background-color: #e6f2ff;
+    text-align: right;
+}
+
+.bot-message {
+    background-color: #f0f0f0;
+    text-align: left;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .dashboard-card {
+        margin-bottom: 15px;
+    }
+}
+
+/* Accessibility Enhancements */
+button, input, select {
+    font-size: 16px;
+}
+
+/* Alert Styles */
+.alert-custom {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+}
+
+/* Camera and Photo Upload */
+#camera-preview, #photo-preview {
+    max-width: 100%;
+    max-height: 300px;
+    object-fit: contain;
+}
+
+/* Form Styles */
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-label {
+    font-weight: 600;
+}
+
+/* Repeat Options */
+.repeat-options {
+    background-color: #f9f9f9;
+    padding: 15px;
+    border-radius: 5px;
+    margin-top: 10px;
+}

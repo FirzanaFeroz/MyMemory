@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2">
+        <h2>Memory Chatbot</h2>
+        <div class="chat-container" id="chat-messages">
+            <div class="chat-message bot-message">
+                Hello! I'm here to help you recall and explore your memories. What would you like to discuss?
+            </div>
+        </div>
+        
+        <div class="input-group mt-3">
+            <input type="text" id="chat-input" class="form-control" placeholder="Type your message...">
+            <button id="chat-send" class="btn btn-primary">Send</button>
+        </div>
+    </div>
+</div>
+{% endblock %}

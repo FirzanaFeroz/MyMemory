@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-6">
+        <h2>Add a Memory Log</h2>
+        <form id="memory-form">
+            <div class="form-group">
+                <label for="memory-title" class="form-label">Memory Title</label>
+                <input type="text" class="form-control" id="memory-title" name="title" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="memory-content" class="form-label">Memory Details</label>
+                <textarea class="form-control" id="memory-content" name="content" rows="5" required></textarea>
+            </div>
+            
+            <button type="submit" class="btn btn-primary mt-3">Save Memory</button>
+        </form>
+    </div>
+    
+    <div class="col-md-6">
+        <h2>Memory Logs</h2>
+        <div id="memories-list">
+            <!-- Memories will be dynamically loaded here -->
+        </div>
+    </div>
+</div>
+{% endblock %}

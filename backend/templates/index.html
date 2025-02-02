@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 offset-md-2 text-center">
+        <h1 class="display-4 mb-4">Welcome to MemoryAssist</h1>
+        <p class="lead">Your personal memory companion, designed to support and empower individuals with memory challenges.</p>
+        
+        <div class="row mt-5">
+            <div class="col-md-4 dashboard-card p-3">
+                <h3>People</h3>
+                <p>Add and manage important people in your life.</p>
+                <a href="{{ url_for('people') }}" class="btn btn-primary">Manage People</a>
+            </div>
+            <div class="col-md-4 dashboard-card p-3">
+                <h3>Tasks</h3>
+                <p>Create reminders and track your daily activities.</p>
+                <a href="{{ url_for('tasks') }}" class="btn btn-primary">Manage Tasks</a>
+            </div>
+            <div class="col-md-4 dashboard-card p-3">
+                <h3>Memory Logs</h3>
+                <p>Record and preserve your precious memories.</p>
+                <a href="{{ url_for('memories') }}" class="btn btn-primary">View Memories</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
