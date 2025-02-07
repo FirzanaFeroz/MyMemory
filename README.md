@@ -6,9 +6,6 @@
 ### Team Members
 Firzana Feroz - CUSAT, Kalamassery
 
-### Hosted Project Link
--
-
 ### Project Description
 MyMemory is an application designed to help elderly users and individuals with memory issues. Simply put, it is a memory assistant.
 It helps users by providing reminders, identifying forgotten faces, and logging and recollecting memories via a chatbot. 
